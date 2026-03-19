@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
+import { sileo } from 'sileo'
 import { useTheme } from '../../hooks/useTheme'
 import { useMenu } from '../../hooks/useMenu'
-import { useSubmitOrder } from '../../hooks/useSubmitOrder'
 import { useCartStore } from '../../hooks/useCart'
+import { useOrderTracking } from '../../hooks/useOrderTracking'
 import { injectTheme } from '../../lib/injectTheme'
+import { mockSubmitOrder } from '../../mocks/handlers'
+import type { CreateOrderDto } from '../../types/menu'
 import { Header } from './Header'
 import { CategoryTabs } from './CategoryTabs'
 import { MenuGrid } from './MenuGrid'
@@ -17,11 +20,12 @@ export function GuestApp() {
   const { cafeId = '', tableId = '' } = useParams()
   const { data: theme, isLoading: themeLoading } = useTheme(cafeId)
   const { data: menuData, isLoading: menuLoading } = useMenu(cafeId)
-  const submitOrder = useSubmitOrder()
   const cartStore = useCartStore()
+  const { startTracking } = useOrderTracking()
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [orderResult, setOrderResult] = useState<{
     orderId: string
     estimatedMinutes: number
@@ -67,7 +71,10 @@ export function GuestApp() {
   }
 
   const handleSubmit = async (note?: string) => {
-    const result = await submitOrder.mutateAsync({
+    setSubmitting(true)
+    setDrawerOpen(false)
+
+    const orderDto: CreateOrderDto = {
       cafeId,
       tableId,
       items: cartStore.items.map(i => ({
@@ -75,9 +82,26 @@ export function GuestApp() {
         quantity: i.quantity,
       })),
       note,
+    }
+
+    const result = await sileo.promise(mockSubmitOrder(orderDto), {
+      loading: { title: 'Šaljem narudžbinu...' },
+      success: (data) => ({
+        title: 'Narudžbina potvrđena!',
+        description: `#${data.orderId} — stižemo za ~${data.estimatedMinutes} min`,
+      }),
+      error: () => ({
+        title: 'Greška pri slanju',
+        description: 'Pokušajte ponovo.',
+      }),
     })
-    setDrawerOpen(false)
-    setOrderResult(result)
+
+    setSubmitting(false)
+
+    if (result) {
+      startTracking(result)
+      setOrderResult(result)
+    }
   }
 
   return (
@@ -109,7 +133,7 @@ export function GuestApp() {
           <CartDrawer
             onClose={() => setDrawerOpen(false)}
             onSubmit={handleSubmit}
-            isSubmitting={submitOrder.isPending}
+            isSubmitting={submitting}
           />
         )}
       </AnimatePresence>

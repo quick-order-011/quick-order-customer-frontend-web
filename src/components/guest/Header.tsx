@@ -18,8 +18,8 @@ export function Header({ theme, tableId, cafeName }: HeaderProps) {
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-4 left-4 text-white">
-          <h1 className="text-2xl font-[var(--font-weight-display)] font-[family-name:var(--font-display)]">
+        <div className="absolute bottom-4 left-5 text-white">
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
             {cafeName ?? theme.name}
           </h1>
           <p className="text-sm opacity-80">Sto #{tableId}</p>
@@ -30,30 +30,32 @@ export function Header({ theme, tableId, cafeName }: HeaderProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3"
-      style={{ backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
+      className="sticky top-0 z-30 flex h-14 items-center gap-3 px-5 backdrop-blur-md"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--bg) 85%, transparent)',
+        borderBottom: '1px solid var(--border)',
+      }}
     >
       {headerStyle === 'branded' && theme.assets.logoUrl && (
         <img
           src={theme.assets.logoUrl}
           alt="Logo"
-          className="h-10 w-10 rounded-full object-cover"
+          className="h-9 w-9 rounded-full object-cover"
+          style={{ border: '2px solid var(--border)' }}
         />
       )}
-      <div className="flex-1">
-        <h1
-          className="text-lg leading-tight"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 'var(--font-weight-display)',
-            color: 'var(--text-1)',
-          }}
-        >
-          {cafeName ?? theme.name}
-        </h1>
-      </div>
+      <h1
+        className="flex-1 truncate text-base font-bold"
+        style={{
+          fontFamily: 'var(--font-display)',
+          color: 'var(--text-1)',
+          letterSpacing: 'var(--letter-spacing-display)',
+        }}
+      >
+        {cafeName ?? theme.name}
+      </h1>
       <span
-        className="rounded-full px-3 py-1 text-xs font-medium"
+        className="shrink-0 rounded-full px-3 py-1 text-xs font-medium"
         style={{
           backgroundColor: 'var(--surface)',
           color: 'var(--text-2)',

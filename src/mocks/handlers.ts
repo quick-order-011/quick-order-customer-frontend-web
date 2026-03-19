@@ -1,5 +1,5 @@
 import type { ThemeConfig } from '../types/theme'
-import type { Category, MenuItem, OrderResponse } from '../types/menu'
+import type { Category, MenuItem, CreateOrderDto, OrderResponse } from '../types/menu'
 import { mockTheme, mockCategories, mockItems } from './data'
 
 // In-memory state for mock
@@ -24,11 +24,11 @@ export async function mockFetchMenu(
   }
 }
 
-export async function mockSubmitOrder(): Promise<OrderResponse> {
+export async function mockSubmitOrder(_order?: CreateOrderDto): Promise<OrderResponse> {
   await delay(800)
   return {
     orderId: `ORD-${Date.now()}`,
-    estimatedMinutes: Math.floor(Math.random() * 10) + 5,
+    estimatedMinutes: 1, // 1 min for demo — notifications fire at ~18s, ~42s, ~60s
   }
 }
 

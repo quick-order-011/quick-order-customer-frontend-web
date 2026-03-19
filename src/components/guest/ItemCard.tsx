@@ -16,27 +16,25 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
   return (
     <motion.div
       layout
-      className="flex flex-col overflow-hidden"
+      className="overflow-hidden"
       style={{
         backgroundColor: 'var(--surface)',
         borderRadius: 'var(--radius)',
         boxShadow: 'var(--shadow)',
-        border: '1px solid var(--border)',
       }}
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={item.imageUrl ?? placeholderImage}
           alt={item.name}
-          className="h-full w-full object-cover"
-          style={{ borderRadius: 'var(--radius-img)' }}
+          className="h-full w-full object-cover transition-transform duration-300 active:scale-105"
           loading="lazy"
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 p-3">
+      <div className="flex flex-col gap-0.5 p-3">
         <h3
-          className="text-sm font-semibold leading-tight"
+          className="text-[13px] font-semibold leading-tight"
           style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
         >
           {item.name}
@@ -44,14 +42,14 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
 
         {showDescription && item.description && (
           <p
-            className="line-clamp-2 text-xs leading-snug"
+            className="line-clamp-2 text-[11px] leading-snug"
             style={{ color: 'var(--text-2)', fontFamily: 'var(--font-body)' }}
           >
             {item.description}
           </p>
         )}
 
-        <div className="mt-auto flex items-center justify-between pt-2">
+        <div className="mt-2 flex items-center justify-between">
           <span
             className="text-sm font-bold"
             style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
@@ -62,7 +60,7 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
           {quantity === 0 ? (
             <button
               onClick={() => add(item)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold transition-transform active:scale-90"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-base font-bold outline-none transition-transform active:scale-90"
               style={{
                 backgroundColor: 'var(--primary)',
                 color: 'var(--primary-text)',
@@ -72,28 +70,27 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
               +
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => update(item.id, quantity - 1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-transform active:scale-90"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold outline-none transition-transform active:scale-90"
                 style={{
                   backgroundColor: 'var(--surface-hover)',
                   color: 'var(--text-1)',
-                  border: '1px solid var(--border)',
                 }}
                 aria-label="Smanji količinu"
               >
                 −
               </button>
               <span
-                className="min-w-[1.25rem] text-center text-sm font-bold"
+                className="min-w-[1rem] text-center text-xs font-bold"
                 style={{ color: 'var(--text-1)' }}
               >
                 {quantity}
               </span>
               <button
                 onClick={() => add(item)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-transform active:scale-90"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold outline-none transition-transform active:scale-90"
                 style={{
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-text)',

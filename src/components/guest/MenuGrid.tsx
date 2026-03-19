@@ -31,7 +31,7 @@ export function MenuGrid({
 
   return (
     <div
-      className={`grid gap-4 p-4 ${
+      className={`grid gap-3.5 px-5 pt-4 pb-28 ${
         gridColumns === 1
           ? 'grid-cols-1'
           : 'grid-cols-2 sm:grid-cols-3'
