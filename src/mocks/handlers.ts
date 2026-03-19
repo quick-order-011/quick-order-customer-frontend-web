@@ -1,17 +1,18 @@
 import type { ThemeConfig } from '../types/theme'
 import type { Category, MenuItem, CreateOrderDto, OrderResponse } from '../types/menu'
-import { mockTheme, mockCategories, mockItems } from './data'
+import { getThemeForCafe, mockCategories, mockItems } from './data'
 
-// In-memory state for mock
-let currentTheme: ThemeConfig = { ...mockTheme }
+// In-memory overrides per cafe
+const themeOverrides: Record<string, Partial<ThemeConfig>> = {}
 
 function delay(ms = 300): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export async function mockFetchTheme(_: string): Promise<ThemeConfig> {
+export async function mockFetchTheme(cafeId: string): Promise<ThemeConfig> {
   await delay()
-  return { ...currentTheme }
+  const base = getThemeForCafe(cafeId)
+  return { ...base, ...themeOverrides[cafeId] }
 }
 
 export async function mockFetchMenu(
@@ -33,10 +34,11 @@ export async function mockSubmitOrder(_order?: CreateOrderDto): Promise<OrderRes
 }
 
 export async function mockUpdateTheme(
-  _: string,
+  cafeId: string,
   theme: Partial<ThemeConfig>,
 ): Promise<ThemeConfig> {
   await delay(400)
-  currentTheme = { ...currentTheme, ...theme }
-  return { ...currentTheme }
+  themeOverrides[cafeId] = { ...themeOverrides[cafeId], ...theme }
+  const base = getThemeForCafe(cafeId)
+  return { ...base, ...themeOverrides[cafeId] }
 }

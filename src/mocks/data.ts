@@ -2,15 +2,53 @@ import type { ThemeConfig } from '../types/theme'
 import type { Category, MenuItem } from '../types/menu'
 import { presets } from '../lib/presets'
 
-export const mockTheme: ThemeConfig = {
-  cafeId: 'kafic-arsenal',
-  name: 'Espresso Dark',
-  ...presets.warm,
-  assets: {
-    logoUrl: 'https://placehold.co/120x120/d4843a/1a1008?text=Arsenal',
-    placeholderImageUrl: 'https://placehold.co/400x300/261a0e/b89a78?text=No+Image',
+// ─── Themes per cafe ───
+
+const themes: Record<string, ThemeConfig> = {
+  'kafic-arsenal': {
+    cafeId: 'kafic-arsenal',
+    name: 'Espresso Dark',
+    ...presets.warm,
+    assets: {
+      logoUrl: 'https://placehold.co/120x120/d4843a/1a1008?text=A',
+      placeholderImageUrl: 'https://placehold.co/400x300/261a0e/b89a78?text=No+Image',
+    },
+  },
+  'kafic-loft': {
+    cafeId: 'kafic-loft',
+    name: 'The Loft',
+    ...presets.modern,
+    assets: {
+      logoUrl: 'https://placehold.co/120x120/111111/ffffff?text=L',
+      placeholderImageUrl: 'https://placehold.co/400x300/f5f5f5/aaaaaa?text=No+Image',
+    },
+  },
+  'kafic-luxe': {
+    cafeId: 'kafic-luxe',
+    name: 'Luxe Lounge',
+    ...presets.luxury,
+    assets: {
+      logoUrl: 'https://placehold.co/120x120/c9a84c/0a0e1a?text=LX',
+      headerImageUrl: 'https://placehold.co/800x400/0a0e1a/c9a84c?text=Luxe+Lounge',
+      placeholderImageUrl: 'https://placehold.co/400x300/12182b/9a8e7a?text=No+Image',
+    },
+  },
+  'kafic-bela': {
+    cafeId: 'kafic-bela',
+    name: 'Bela Roda',
+    ...presets.minimal,
+    assets: {
+      logoUrl: 'https://placehold.co/120x120/333333/ffffff?text=BR',
+      placeholderImageUrl: 'https://placehold.co/400x300/f8f8f8/bbbbbb?text=No+Image',
+    },
   },
 }
+
+export function getThemeForCafe(cafeId: string): ThemeConfig {
+  return themes[cafeId] ?? themes['kafic-arsenal']
+}
+
+// ─── Categories & Items ───
 
 export const mockCategories: Category[] = [
   { id: 'cat-1', name: 'Kafa', icon: '☕', order: 1 },

@@ -16,7 +16,7 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
   return (
     <motion.div
       layout
-      className="overflow-hidden"
+      className="flex flex-col overflow-hidden"
       style={{
         backgroundColor: 'var(--surface)',
         borderRadius: 'var(--radius)',
@@ -32,7 +32,7 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
         />
       </div>
 
-      <div className="flex flex-col gap-0.5 p-3">
+      <div className="flex flex-1 flex-col gap-0.5 p-3">
         <h3
           className="text-[13px] font-semibold leading-tight"
           style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
@@ -49,7 +49,7 @@ export function ItemCard({ item, showDescription = true, placeholderImage }: Ite
           </p>
         )}
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-2">
           <span
             className="text-sm font-bold"
             style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
