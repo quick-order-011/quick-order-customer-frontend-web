@@ -5,7 +5,7 @@ import { sileo } from 'sileo'
 import { useTheme } from '../../hooks/useTheme'
 import { useMenu } from '../../hooks/useMenu'
 import { useCartStore } from '../../hooks/useCart'
-import { useOrderTracking } from '../../hooks/useOrderTracking'
+import { useOrderSocket } from '../../hooks/useOrderSocket'
 import { injectTheme } from '../../lib/injectTheme'
 import { mockSubmitOrder } from '../../mocks/handlers'
 import type { CreateOrderDto } from '../../types/menu'
@@ -14,28 +14,23 @@ import { CategoryTabs } from './CategoryTabs'
 import { MenuGrid } from './MenuGrid'
 import { CartBar } from './CartBar'
 import { CartDrawer } from './CartDrawer'
-import { OrderConfirmation } from './OrderConfirmation'
 
 export function GuestApp() {
   const { cafeId = '', tableId = '' } = useParams()
   const { data: theme, isLoading: themeLoading } = useTheme(cafeId)
   const { data: menuData, isLoading: menuLoading } = useMenu(cafeId)
   const cartStore = useCartStore()
-  const { startTracking } = useOrderTracking()
+  const { startListening, pauseForEditing, resumeAfterEdit } = useOrderSocket()
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [orderResult, setOrderResult] = useState<{
-    orderId: string
-    estimatedMinutes: number
-  } | null>(null)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (theme) injectTheme(theme)
   }, [theme])
 
-  // Derive active category: use selected if valid, otherwise default to first
   const activeCategoryId =
     menuData?.categories.some(c => c.id === selectedCategoryId)
       ? selectedCategoryId
@@ -57,19 +52,7 @@ export function GuestApp() {
     )
   }
 
-  if (orderResult) {
-    return (
-      <OrderConfirmation
-        orderId={orderResult.orderId}
-        estimatedMinutes={orderResult.estimatedMinutes}
-        onNewOrder={() => {
-          setOrderResult(null)
-          cartStore.clear()
-        }}
-      />
-    )
-  }
-
+  // First order submit (via CartDrawer)
   const handleSubmit = async (note?: string) => {
     setSubmitting(true)
     setDrawerOpen(false)
@@ -85,23 +68,66 @@ export function GuestApp() {
     }
 
     const result = await sileo.promise(mockSubmitOrder(orderDto), {
-      loading: { title: 'Šaljem narudžbinu...' },
+      loading: { title: 'Saljem narudzbinu...' },
       success: (data) => ({
-        title: 'Narudžbina potvrđena!',
-        description: `#${data.orderId} — stižemo za ~${data.estimatedMinutes} min`,
+        title: 'Narudzbina primljena',
+        description: `#${data.orderId}`,
+        autopilot: false,
       }),
       error: () => ({
-        title: 'Greška pri slanju',
-        description: 'Pokušajte ponovo.',
+        title: 'Greska pri slanju',
+        description: 'Pokusajte ponovo.',
+        autopilot: false,
       }),
     })
 
     setSubmitting(false)
 
     if (result) {
-      startTracking(result)
-      setOrderResult(result)
+      const orderedItems = [...cartStore.items]
+      cartStore.markAsSubmitted()
+      startListening(result.orderId, orderedItems)
     }
+  }
+
+  // Enter edit mode
+  const handleEnterEdit = () => {
+    setEditing(true)
+    pauseForEditing()
+  }
+
+  // Submit update
+  const handleSubmitUpdate = async () => {
+    setSubmitting(true)
+
+    const orderDto: CreateOrderDto = {
+      cafeId,
+      tableId,
+      items: cartStore.items.map(i => ({
+        menuItemId: i.menuItem.id,
+        quantity: i.quantity,
+      })),
+    }
+
+    await sileo.promise(mockSubmitOrder(orderDto), {
+      loading: { title: 'Azuriram narudzbinu...' },
+      success: (data) => ({
+        title: 'Narudzbina azurirana',
+        description: `#${data.orderId}`,
+        autopilot: false,
+      }),
+      error: () => ({
+        title: 'Greska pri azuriranju',
+        autopilot: false,
+      }),
+    })
+
+    setSubmitting(false)
+    setEditing(false)
+
+    const updatedItems = [...cartStore.items]
+    cartStore.markAsSubmitted()
+    resumeAfterEdit(updatedItems)
   }
 
   return (
@@ -126,10 +152,15 @@ export function GuestApp() {
         placeholderImage={theme.assets.placeholderImageUrl}
       />
 
-      <CartBar onOpen={() => setDrawerOpen(true)} />
+      <CartBar
+        onOpen={() => setDrawerOpen(true)}
+        editing={editing}
+        onEdit={handleEnterEdit}
+        onSubmitUpdate={handleSubmitUpdate}
+      />
 
       <AnimatePresence>
-        {drawerOpen && (
+        {drawerOpen && !cartStore.hasOrder() && (
           <CartDrawer
             onClose={() => setDrawerOpen(false)}
             onSubmit={handleSubmit}

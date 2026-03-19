@@ -16,7 +16,17 @@ export default function App() {
           <Route path="*" element={<Navigate to="/kafic-arsenal/4" replace />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position="top-center" theme="dark" />
+      <Toaster
+        position="top-center"
+        options={{
+          fill: '#111111',
+          styles: {
+            title: 'text-white!',
+            description: 'text-white/75!',
+            badge: 'bg-white/20!',
+          },
+        }}
+      />
     </QueryClientProvider>
   )
 }

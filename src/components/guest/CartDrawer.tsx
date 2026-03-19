@@ -9,8 +9,9 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ onClose, onSubmit, isSubmitting }: CartDrawerProps) {
-  const { items, update, remove, totalPrice } = useCartStore()
+  const { items, update, remove, totalPrice, hasOrder, submittedItems } = useCartStore()
   const [note, setNote] = useState('')
+  const isUpdate = hasOrder()
 
   return (
     <>
@@ -59,22 +60,39 @@ export function CartDrawer({ onClose, onSubmit, isSubmitting }: CartDrawerProps)
 
           {/* Items */}
           <div className="flex flex-col gap-3">
-            {items.map(({ menuItem, quantity }) => (
+            {items.map(({ menuItem, quantity }) => {
+              const prev = submittedItems.find(s => s.menuItem.id === menuItem.id)
+              const isNew = isUpdate && !prev
+              const isChanged = isUpdate && prev && prev.quantity !== quantity
+
+              return (
               <div
                 key={menuItem.id}
                 className="flex items-center gap-3 rounded-xl p-3"
                 style={{
                   backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
+                  border: isNew ? '1px solid var(--primary)' : '1px solid var(--border)',
                 }}
               >
                 <div className="flex-1">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: 'var(--text-1)', fontFamily: 'var(--font-body)' }}
-                  >
-                    {menuItem.name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--text-1)', fontFamily: 'var(--font-body)' }}
+                    >
+                      {menuItem.name}
+                    </p>
+                    {isNew && (
+                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-text)' }}>
+                        novo
+                      </span>
+                    )}
+                    {isChanged && (
+                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-2)' }}>
+                        izmenjeno
+                      </span>
+                    )}
+                  </div>
                   <p
                     className="text-xs"
                     style={{ color: 'var(--text-2)' }}
@@ -122,7 +140,8 @@ export function CartDrawer({ onClose, onSubmit, isSubmitting }: CartDrawerProps)
                   ✕
                 </button>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Note */}
@@ -160,7 +179,7 @@ export function CartDrawer({ onClose, onSubmit, isSubmitting }: CartDrawerProps)
               fontFamily: 'var(--font-body)',
             }}
           >
-            {isSubmitting ? 'Šaljem...' : 'Naruči'}
+            {isSubmitting ? 'Saljem...' : isUpdate ? 'Azuriraj narudzbinu' : 'Naruci'}
           </button>
         </div>
       </motion.div>
