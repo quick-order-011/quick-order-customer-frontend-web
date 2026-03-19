@@ -1,90 +1,120 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import type { OrderStatus } from '../../hooks/useOrderSocket'
 
 interface OrderConfirmationProps {
   orderId: string
-  estimatedMinutes: number
+  status: OrderStatus
   onNewOrder: () => void
 }
 
-export function OrderConfirmation({
-  orderId,
-  estimatedMinutes,
-  onNewOrder,
-}: OrderConfirmationProps) {
+const STATUS_CONFIG: Record<string, { icon: string; title: string; subtitle: string; color: string }> = {
+  submitted: {
+    icon: '📋',
+    title: 'Narudžbina primljena!',
+    subtitle: 'Čekamo potvrdu od konobara...',
+    color: 'var(--primary)',
+  },
+  inprogress: {
+    icon: '👨‍🍳',
+    title: 'Priprema se...',
+    subtitle: 'Vaša narudžbina je u pripremi.',
+    color: 'var(--primary)',
+  },
+  prepared: {
+    icon: '✅',
+    title: 'Narudžbina je spremna!',
+    subtitle: 'Konobar donosi vašu narudžbinu.',
+    color: 'var(--success)',
+  },
+  delivered: {
+    icon: '🍽️',
+    title: 'Prijatno!',
+    subtitle: 'Vaša narudžbina je isporučena.',
+    color: 'var(--success)',
+  },
+}
+
+export function OrderConfirmation({ orderId, status, onNewOrder }: OrderConfirmationProps) {
+  const config = STATUS_CONFIG[status ?? 'submitted'] ?? STATUS_CONFIG.submitted
+
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
       style={{ backgroundColor: 'var(--bg)' }}
     >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="mb-6 flex h-24 w-24 items-center justify-center rounded-full"
-        style={{ backgroundColor: 'var(--success)' }}
-      >
-        <svg
-          className="h-12 w-12 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={3}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={status}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          className="flex flex-col items-center"
         >
-          <motion.path
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </motion.div>
+          {/* Icon */}
+          <div
+            className="mb-6 flex h-24 w-24 items-center justify-center rounded-full text-4xl"
+            style={{ backgroundColor: config.color, opacity: 0.15 }}
+          >
+            <span style={{ opacity: 1 }}>{config.icon}</span>
+          </div>
 
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mb-2 text-2xl font-bold"
-        style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
-      >
-        Narudžbina primljena!
-      </motion.h1>
+          {/* Status indicator dots */}
+          <div className="mb-6 flex gap-2">
+            {['submitted', 'inprogress', 'prepared', 'delivered'].map((step) => {
+              const steps = ['submitted', 'inprogress', 'prepared', 'delivered']
+              const currentIdx = steps.indexOf(status ?? 'submitted')
+              const stepIdx = steps.indexOf(step)
+              const isActive = stepIdx <= currentIdx
 
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="mb-1 text-sm"
-        style={{ color: 'var(--text-2)', fontFamily: 'var(--font-body)' }}
-      >
-        Konobar dolazi uskoro.
-      </motion.p>
+              return (
+                <div
+                  key={step}
+                  className="h-2 w-8 rounded-full transition-colors duration-500"
+                  style={{
+                    backgroundColor: isActive ? config.color : 'var(--border)',
+                  }}
+                />
+              )
+            })}
+          </div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mb-8 text-xs"
-        style={{ color: 'var(--text-muted)' }}
-      >
-        #{orderId} &middot; ~{estimatedMinutes} min
-      </motion.p>
+          <h1
+            className="mb-2 text-2xl font-bold"
+            style={{ color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}
+          >
+            {config.title}
+          </h1>
 
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        onClick={onNewOrder}
-        className="rounded-xl px-8 py-3 text-sm font-semibold transition-transform active:scale-95"
-        style={{
-          backgroundColor: 'var(--primary)',
-          color: 'var(--primary-text)',
-          fontFamily: 'var(--font-body)',
-        }}
-      >
-        Naruči još
-      </motion.button>
+          <p
+            className="mb-1 text-sm"
+            style={{ color: 'var(--text-2)', fontFamily: 'var(--font-body)' }}
+          >
+            {config.subtitle}
+          </p>
+
+          <p className="mb-8 text-xs" style={{ color: 'var(--text-muted)' }}>
+            #{orderId}
+          </p>
+
+          {/* Show "order more" button only when delivered */}
+          {(status === 'delivered' || status === 'prepared') && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={onNewOrder}
+              className="rounded-xl px-8 py-3 text-sm font-semibold transition-transform active:scale-95"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'var(--primary-text)',
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              Naruči još
+            </motion.button>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
