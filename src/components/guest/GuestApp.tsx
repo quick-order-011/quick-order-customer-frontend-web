@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { sileo } from 'sileo'
 import { useTheme } from '../../hooks/useTheme'
 import { useMenu } from '../../hooks/useMenu'
+import { useGuestSession } from '../../hooks/useGuestSession'
 import { useCartStore } from '../../hooks/useCart'
 import { useOrderSocket } from '../../hooks/useOrderSocket'
 import { injectTheme } from '../../lib/injectTheme'
@@ -14,11 +15,21 @@ import { CategoryTabs } from './CategoryTabs'
 import { MenuGrid } from './MenuGrid'
 import { CartBar } from './CartBar'
 import { CartDrawer } from './CartDrawer'
+import { PromotionsSection } from './PromotionsSection'
 
 export function GuestApp() {
-  const { cafeId = '', tableId = '' } = useParams()
-  const { data: theme, isLoading: themeLoading } = useTheme(cafeId)
-  const { data: menuData, isLoading: menuLoading } = useMenu(cafeId)
+  // Route mirrors the backend QR: /shops/:shopId/tables/:tableId
+  const { shopId = '', tableId = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  // MenuService has no guest shopId→menu endpoint yet, so the menuId is supplied
+  // via the `?menu=` query param (or VITE_MENU_ID for single-cafe dev).
+  const menuId = searchParams.get('menu') ?? import.meta.env.VITE_MENU_ID ?? ''
+
+  // Register the guest session (fingerprint → AuthService) on QR entry.
+  useGuestSession(shopId, tableId)
+
+  const { data: theme, isLoading: themeLoading } = useTheme(menuId)
+  const { data: menuData, isLoading: menuLoading } = useMenu(menuId)
   const cartStore = useCartStore()
   const { startListening, pauseForEditing, resumeAfterEdit } = useOrderSocket()
 
@@ -58,7 +69,7 @@ export function GuestApp() {
     setDrawerOpen(false)
 
     const orderDto: CreateOrderDto = {
-      cafeId,
+      cafeId: menuId,
       tableId,
       items: cartStore.items.map(i => ({
         menuItemId: i.menuItem.id,
@@ -101,7 +112,7 @@ export function GuestApp() {
     setSubmitting(true)
 
     const orderDto: CreateOrderDto = {
-      cafeId,
+      cafeId: menuId,
       tableId,
       items: cartStore.items.map(i => ({
         menuItemId: i.menuItem.id,
@@ -136,6 +147,8 @@ export function GuestApp() {
       style={{ backgroundColor: 'var(--bg)', fontFamily: 'var(--font-body)', fontSize: 'var(--font-size-base)' }}
     >
       <Header theme={theme} tableId={tableId} />
+
+      <PromotionsSection menuId={menuId} />
 
       <CategoryTabs
         categories={menuData.categories}

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { mockFetchMenu } from '../mocks/handlers'
+import { fetchMenu } from '../lib/api'
 
-export function useMenu(cafeId: string) {
+export function useMenu(menuId: string) {
   return useQuery({
-    queryKey: ['menu', cafeId],
-    queryFn: () => mockFetchMenu(cafeId),
+    queryKey: ['menu', menuId],
+    queryFn: () => fetchMenu(menuId),
     staleTime: 2 * 60 * 1000,
+    enabled: Boolean(menuId),
   })
 }
