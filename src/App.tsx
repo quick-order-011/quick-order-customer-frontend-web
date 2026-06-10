@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sileo'
 import { GuestRoute } from './routes/GuestRoute'
 import { AdminRoute } from './routes/AdminRoute'
+import { ResetPassword } from './pages/ResetPassword'
 
 const queryClient = new QueryClient()
 
@@ -14,6 +15,8 @@ export default function App() {
           {/* Matches the QR the backend generates: APP_URL/shops/:shopId/tables/:tableId */}
           <Route path="/shops/:shopId/tables/:tableId" element={<GuestRoute />} />
           <Route path="/admin/:cafeId/theme" element={<AdminRoute />} />
+          {/* Target of the forgot-password email link: APP_URL/reset_password?token=... */}
+          <Route path="/reset_password" element={<ResetPassword />} />
           <Route
             path="*"
             element={

@@ -63,6 +63,35 @@ export async function enterGuestSession(
   if (!res.ok) throw new Error(`Guest session error: ${res.status}`)
 }
 
+/**
+ * Completes a password reset against AuthService using the token from the
+ * forgot-password email link. The vite proxy maps /auth -> :3002/api, so the
+ * path below resolves to POST /api/auth/reset-password.
+ * Returns void on success (204); throws Error with the backend message on 4xx.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${AUTH_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  })
+  if (res.ok) return
+
+  let message = `Reset failed (${res.status})`
+  try {
+    const data = (await res.json()) as { errors?: string[] }
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      message = data.errors[0]
+    }
+  } catch {
+    // non-JSON error body — keep the default message
+  }
+  throw new Error(message)
+}
+
 const BACKEND_CATEGORIES = [
   { id: 'COFFEE', name: 'Coffee', order: 1 },
   { id: 'FOOD', name: 'Food', order: 2 },
