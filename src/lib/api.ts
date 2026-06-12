@@ -66,18 +66,22 @@ export async function enterGuestSession(
 /**
  * Completes a password reset against AuthService using the token from the
  * forgot-password email link. The vite proxy maps /auth -> :3002/api, so the
- * path below resolves to POST /api/auth/reset-password.
- * Returns void on success (204); throws Error with the backend message on 4xx.
+ * path below resolves to POST /api/auth/reset-password?token=...
+ * Returns void on success; throws Error with the backend message on 4xx.
  */
 export async function resetPassword(
   token: string,
   newPassword: string,
+  confirmedPassword: string,
 ): Promise<void> {
-  const res = await fetch(`${AUTH_BASE}/auth/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, newPassword }),
-  })
+  const res = await fetch(
+    `${AUTH_BASE}/auth/reset-password?token=${encodeURIComponent(token)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword, confirmedPassword }),
+    },
+  )
   if (res.ok) return
 
   let message = `Reset failed (${res.status})`

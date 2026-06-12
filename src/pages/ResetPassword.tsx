@@ -11,10 +11,11 @@ type Status = 'idle' | 'submitting' | 'success'
 export function ResetPassword() {
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
-  // Backend (GET /auth/reset-password/:token) validates the token first and
-  // redirects here with ?status=valid|expired|invalid (&token=... when valid).
+  // Backend (GET /auth/reset-password?token=...) validates the token first and
+  // redirects here with ?status=verified|already-used|expired|invalid
+  // (&token=... only when verified).
   const linkStatus = params.get('status')
-  const linkInvalid = !token || linkStatus === 'invalid' || linkStatus === 'expired'
+  const linkInvalid = !token || (linkStatus !== null && linkStatus !== 'verified')
 
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -45,7 +46,7 @@ export function ResetPassword() {
     setError(null)
     setStatus('submitting')
     try {
-      await resetPassword(token, password)
+      await resetPassword(token, password, confirm)
       setStatus('success')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Došlo je do greške.')
@@ -77,7 +78,9 @@ export function ResetPassword() {
           <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
             {linkStatus === 'expired'
               ? 'Link je istekao. Zatraži novi link za reset lozinke.'
-              : 'Link nije validan. Zatraži novi link za reset lozinke.'}
+              : linkStatus === 'already-used'
+                ? 'Link je već iskorišćen. Zatraži novi link za reset lozinke.'
+                : 'Link nije validan. Zatraži novi link za reset lozinke.'}
           </div>
         ) : status === 'success' ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
