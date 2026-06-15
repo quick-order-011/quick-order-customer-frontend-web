@@ -2,27 +2,38 @@ import type { ThemeConfig } from '../types/theme'
 import type { Category, MenuItem, CreateOrderDto, OrderResponse } from '../types/menu'
 import { getVisitorId, getFingerprint } from './fingerprint'
 
-// MenuService (ShopService). In dev the vite proxy maps /api -> http://localhost:3001.
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
-// AuthService guest-entry. In dev the vite proxy maps /auth -> http://localhost:3002/api.
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE ?? '/auth'
+// Everything goes through the API gateway (single entry point). In dev the vite
+// proxy maps /api -> http://localhost:3003 (the gateway). The gateway routes by
+// the service segment (auth, public, menus, shops, session, ...) and injects the
+// identity headers (x-user-id / x-user-role / x-visitor-id) from the JWT cookie,
+// so the frontend no longer sends them itself.
+const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_BASE ?? '/api/v1'
 
-// Until an API gateway injects identity from the guest JWT cookie, the frontend
-// sends the GUEST identity headers to MenuService directly.
-const GUEST_USER_ID =
-  import.meta.env.VITE_GUEST_USER_ID ?? '00000000-0000-4000-8000-000000000001'
-const GUEST_ROLE = 'GUEST'
+// MobileGuard (session/entry, orders) requires these device signals; the guest
+// app is expected to run on a mobile device.
+function mobileHeaders(): Record<string, string> {
+  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  const isMobile =
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints ?? 0) > 0
+  return {
+    'x-is-mobile': String(isMobile),
+    'x-coarse-pointer': String(coarse),
+    'x-touch-points': String(navigator.maxTouchPoints ?? 0),
+    'x-inner-width': String(window.innerWidth),
+    'x-inner-height': String(window.innerHeight),
+  }
+}
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
+  const res = await fetch(`${GATEWAY_BASE}${url}`, {
+    credentials: 'include',
+    ...init,
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': GUEST_USER_ID,
-      'x-user-role': GUEST_ROLE,
       'x-visitor-id': getVisitorId(),
       ...(init?.headers ?? {}),
     },
-    ...init,
   })
   if (!res.ok) throw new Error(`API error: ${res.status}`)
   if (res.status === 204) return undefined as T
@@ -47,12 +58,13 @@ export async function enterGuestSession(
     console.info('[fingerprint]', fp.visitorId, fp.components)
   }
 
-  const res = await fetch(`${AUTH_BASE}/session/entry/${shopId}/${tableId}`, {
+  const res = await fetch(`${GATEWAY_BASE}/session/entry/${shopId}/${tableId}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'x-visitor-id': fp.visitorId,
+      ...mobileHeaders(),
     },
     body: JSON.stringify({
       visitorId: fp.visitorId,
@@ -64,9 +76,8 @@ export async function enterGuestSession(
 }
 
 /**
- * Completes a password reset against AuthService using the token from the
- * forgot-password email link. The vite proxy maps /auth -> :3002/api, so the
- * path below resolves to POST /api/auth/reset-password?token=...
+ * Completes a password reset using the token from the forgot-password email.
+ * Goes through the gateway: POST /api/v1/auth/reset-password?token=...
  * Returns void on success; throws Error with the backend message on 4xx.
  */
 export async function resetPassword(
@@ -75,9 +86,10 @@ export async function resetPassword(
   confirmedPassword: string,
 ): Promise<void> {
   const res = await fetch(
-    `${AUTH_BASE}/auth/reset-password?token=${encodeURIComponent(token)}`,
+    `${GATEWAY_BASE}/auth/reset-password?token=${encodeURIComponent(token)}`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newPassword, confirmedPassword }),
     },

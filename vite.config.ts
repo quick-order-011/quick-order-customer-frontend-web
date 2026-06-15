@@ -6,17 +6,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // MenuService (ShopService) — global prefix /api. Same-origin via proxy = no CORS.
+      // Everything goes through the API gateway (single entry point). Same-origin
+      // via the proxy keeps the JWT cookie first-party (no CORS / SameSite issues).
+      // The gateway routes /api/v1/<service>/... to MenuService / AuthService.
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3003',
         changeOrigin: true,
-      },
-      // AuthService — global prefix /api. /auth/session/... -> :3002/api/session/...
-      // Proxying keeps the guest JWT cookie first-party (no CORS / SameSite issues).
-      '/auth': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-        rewrite: path => path.replace(/^\/auth/, '/api'),
       },
     },
   },
