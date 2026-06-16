@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sileo'
 import { GuestRoute } from './routes/GuestRoute'
 import { AdminRoute } from './routes/AdminRoute'
+import { ResetPassword } from './pages/ResetPassword'
 
 const queryClient = new QueryClient()
 
@@ -11,9 +12,20 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/:cafeId/:tableId" element={<GuestRoute />} />
+          {/* Matches the QR the backend generates: APP_URL/shops/:shopId/tables/:tableId */}
+          <Route path="/shops/:shopId/tables/:tableId" element={<GuestRoute />} />
           <Route path="/admin/:cafeId/theme" element={<AdminRoute />} />
-          <Route path="*" element={<Navigate to="/kafic-arsenal/4" replace />} />
+          {/* Backend GET /auth/reset-password redirects here: APP_URL/reset-password?status=...&token=... */}
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to="/shops/00000000-0000-4000-8000-000000000001/tables/00000000-0000-4000-8000-000000000002"
+                replace
+              />
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster
