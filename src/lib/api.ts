@@ -9,19 +9,21 @@ import { getVisitorId, getFingerprint } from './fingerprint'
 // so the frontend no longer sends them itself.
 const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_BASE ?? '/api/v1'
 
-// MobileGuard (session/entry, orders) requires these device signals; the guest
-// app is expected to run on a mobile device.
+// The only device signals the gateway needs: MobileGuard (session/entry, orders)
+// validates exactly these five. Sourced from getFingerprint() so they match the
+// derived x-visitor-id. (The full fingerprint stays client-side in the visitor id.)
 function mobileHeaders(): Record<string, string> {
+  const { components: c } = getFingerprint()
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
   const isMobile =
-    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints ?? 0) > 0
+    c.uaData?.mobile ??
+    (/Mobi|Android|iPhone|iPad|iPod/i.test(c.userAgent) || c.maxTouchPoints > 0)
   return {
     'x-is-mobile': String(isMobile),
     'x-coarse-pointer': String(coarse),
-    'x-touch-points': String(navigator.maxTouchPoints ?? 0),
-    'x-inner-width': String(window.innerWidth),
-    'x-inner-height': String(window.innerHeight),
+    'x-touch-points': String(c.maxTouchPoints),
+    'x-inner-width': String(c.viewport.innerWidth),
+    'x-inner-height': String(c.viewport.innerHeight),
   }
 }
 
@@ -41,10 +43,10 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 /**
- * Establishes the guest session against AuthService using the browser
- * fingerprint as the visitor id. The full fingerprint components (screen, UA,
- * WebGL, …) are sent in the body for inspection/storage. AuthService verifies
- * the table via MenuService /internal, then sets an httpOnly guest JWT cookie.
+ * Establishes the guest session against AuthService. The browser fingerprint
+ * travels as request headers (x-visitor-id + the x-* device headers); the
+ * backend reads them there, so no request body is sent. AuthService verifies the
+ * table via MenuService /internal, then sets an httpOnly guest JWT cookie.
  * POST /session/entry/:shopId/:tableId  -> 201 Created (JWT in cookie)
  */
 export async function enterGuestSession(
@@ -62,15 +64,9 @@ export async function enterGuestSession(
     method: 'POST',
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
       'x-visitor-id': fp.visitorId,
       ...mobileHeaders(),
     },
-    body: JSON.stringify({
-      visitorId: fp.visitorId,
-      collectedAt: fp.collectedAt,
-      fingerprint: fp.components,
-    }),
   })
   if (!res.ok) throw new Error(`Guest session error: ${res.status}`)
 }
